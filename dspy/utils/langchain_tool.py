@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 from dspy.adapters.types.tool import Tool, convert_input_schema_to_tool_args
 
+from dspy.utils.pydantic_compat import get_model_fields
 if TYPE_CHECKING:
     from langchain.tools import BaseTool
 
@@ -34,7 +35,7 @@ def convert_langchain_tool(tool: "BaseTool") -> Tool:
     # The args_schema of Langchain tool is a pydantic model, so we can get the type hints from the model fields
     arg_types = {
         key: field.annotation if field.annotation is not None else Any
-        for key, field in args_schema.model_fields.items()
+        for key, field in get_model_fields(args_schema).items()
     }
 
     return Tool(

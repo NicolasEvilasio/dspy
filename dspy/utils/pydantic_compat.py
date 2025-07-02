@@ -49,6 +49,14 @@ if PYDANTIC_V2:
         """Get JSON schema for v2."""
         return cls.model_json_schema()
 
+    def get_model_fields(model_class):
+        """Get model fields in a compatible way between Pydantic v1 and v2."""
+        return model_class.model_fields
+
+    def get_field_info(field, field_name=None):
+        """Get field info in a compatible way between Pydantic v1 and v2."""
+        return field
+
 else:
     # Pydantic v1 compatibility
     from pydantic import root_validator
@@ -158,6 +166,44 @@ else:
         """Get JSON schema for v1."""
         return cls.schema()
 
+    def get_model_fields(model_class):
+        """Get model fields in a compatible way between Pydantic v1 and v2."""
+        return model_class.__fields__
+
+    def get_field_info(field, field_name=None):
+        """Get field info in a compatible way between Pydantic v1 and v2."""
+        # In Pydantic v1, field is a ModelField object
+        # We need to create a compatible FieldInfo-like object
+        from pydantic.fields import ModelField
+        if isinstance(field, ModelField):
+            # Create a simple object that mimics FieldInfo
+            class FieldInfoCompat:
+                def __init__(self, model_field):
+                    self.annotation = model_field.type_
+                    self.default = model_field.default
+                    
+                    # Handle json_schema_extra - this is where DSPy stores field metadata
+                    # In Pydantic v1, when you create Field(json_schema_extra={...}),
+                    # it gets stored in field_info.extra as {'json_schema_extra': {...}}
+                    # We need to extract the content
+                    self.json_schema_extra = {}
+                    
+                    if hasattr(model_field, 'field_info') and hasattr(model_field.field_info, 'extra'):
+                        extra_dict = model_field.field_info.extra
+                        # Check if json_schema_extra is nested
+                        if 'json_schema_extra' in extra_dict:
+                            self.json_schema_extra = extra_dict['json_schema_extra']
+                        else:
+                            # Legacy format or direct content
+                            self.json_schema_extra = extra_dict
+                    
+                    # Ensure json_schema_extra is always a dict and mutable
+                    if not isinstance(self.json_schema_extra, dict):
+                        self.json_schema_extra = {}
+            
+            return FieldInfoCompat(field)
+        return field
+
 __all__ = [
     'PYDANTIC_V2',
     'TypeAdapter',
@@ -169,4 +215,6 @@ __all__ = [
     'model_dump',
     'model_validate',
     'json_schema',
+    'get_model_fields',
+    'get_field_info',
 ] 
