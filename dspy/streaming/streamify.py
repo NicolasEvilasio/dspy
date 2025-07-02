@@ -10,7 +10,20 @@ import litellm
 import ujson
 from anyio import create_memory_object_stream, create_task_group
 from anyio.streams.memory import MemoryObjectSendStream
-from litellm import ModelResponseStream
+
+# Try to import ModelResponseStream, fall back to available alternatives
+try:
+    from litellm import ModelResponseStream
+except ImportError:
+    # Fallback for older versions of litellm that don't have ModelResponseStream
+    try:
+        from litellm import CustomStreamWrapper as ModelResponseStream
+    except ImportError:
+        # If neither is available, create a dummy class
+        class ModelResponseStream:
+            """Dummy class for compatibility when litellm streaming is not available"""
+            def __init__(self, *args, **kwargs):
+                pass
 
 from dspy.dsp.utils.settings import settings
 from dspy.primitives.prediction import Prediction

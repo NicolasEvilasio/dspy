@@ -8,6 +8,7 @@ import pydantic
 import requests
 
 from dspy.adapters.types.base_type import BaseType
+from dspy.utils.pydantic_compat import create_model_validator, PYDANTIC_V2
 
 try:
     import soundfile as sf
@@ -21,10 +22,15 @@ class Audio(BaseType):
     data: str
     audio_format: str
 
-    model_config = {
-        "frozen": True,
-        "extra": "forbid",
-    }
+    if PYDANTIC_V2:
+        model_config = {
+            "frozen": True,
+            "extra": "forbid",
+        }
+    else:
+        class Config:
+            frozen = True
+            extra = "forbid"
 
     def format(self) -> list[dict[str, Any]]:
         try:
@@ -39,8 +45,7 @@ class Audio(BaseType):
             }
         }]
 
-
-    @pydantic.model_validator(mode="before")
+    @create_model_validator(mode="before")
     @classmethod
     def validate_input(cls, values: Any) -> Any:
         """

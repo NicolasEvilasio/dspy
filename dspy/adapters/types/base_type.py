@@ -5,6 +5,8 @@ from typing import Any, get_args, get_origin
 import json_repair
 import pydantic
 
+from dspy.utils.pydantic_compat import create_model_serializer
+
 CUSTOM_TYPE_START_IDENTIFIER = "<<CUSTOM-TYPE-START-IDENTIFIER>>"
 CUSTOM_TYPE_END_IDENTIFIER = "<<CUSTOM-TYPE-END-IDENTIFIER>>"
 
@@ -60,7 +62,7 @@ class BaseType(pydantic.BaseModel):
 
         return result
 
-    @pydantic.model_serializer()
+    @create_model_serializer()
     def serialize_model(self):
         formatted = self.format()
         if isinstance(formatted, list):

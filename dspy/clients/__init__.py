@@ -4,7 +4,22 @@ from pathlib import Path
 from typing import Optional
 
 import litellm
-from litellm.caching.caching import Cache as LitellmCache
+
+# Try to import LiteLLM cache from different possible locations
+try:
+    from litellm.caching.caching import Cache as LitellmCache
+except ImportError:
+    try:
+        from litellm.caching import Cache as LitellmCache
+    except ImportError:
+        try:
+            from litellm import Cache as LitellmCache
+        except ImportError:
+            # If no cache is available, create a dummy class
+            class LitellmCache:
+                """Dummy cache for compatibility when LiteLLM caching is not available"""
+                def __init__(self, *args, **kwargs):
+                    pass
 
 from dspy.clients.base_lm import BaseLM, inspect_history
 from dspy.clients.cache import Cache

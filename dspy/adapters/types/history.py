@@ -2,6 +2,8 @@ from typing import Any
 
 import pydantic
 
+from dspy.utils.pydantic_compat import PYDANTIC_V2
+
 
 class History(pydantic.BaseModel):
     """Class representing the conversation history.
@@ -60,9 +62,16 @@ class History(pydantic.BaseModel):
 
     messages: list[dict[str, Any]]
 
-    model_config = {
-        "frozen": True,
-        "str_strip_whitespace": True,
-        "validate_assignment": True,
-        "extra": "forbid",
-    }
+    if PYDANTIC_V2:
+        model_config = {
+            "frozen": True,
+            "str_strip_whitespace": True,
+            "validate_assignment": True,
+            "extra": "forbid",
+        }
+    else:
+        class Config:
+            frozen = True
+            str_strip_whitespace = True
+            validate_assignment = True
+            extra = "forbid"

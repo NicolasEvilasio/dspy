@@ -9,6 +9,7 @@ import pydantic
 import requests
 
 from dspy.adapters.types.base_type import BaseType
+from dspy.utils.pydantic_compat import create_model_validator, PYDANTIC_V2, model_dump
 
 try:
     from PIL import Image as PILImage
@@ -21,12 +22,19 @@ except ImportError:
 class Image(BaseType):
     url: str
 
-    model_config = {
-        "frozen": True,
-        "str_strip_whitespace": True,
-        "validate_assignment": True,
-        "extra": "forbid",
-    }
+    if PYDANTIC_V2:
+        model_config = {
+            "frozen": True,
+            "str_strip_whitespace": True,
+            "validate_assignment": True,
+            "extra": "forbid",
+        }
+    else:
+        class Config:
+            frozen = True
+            str_strip_whitespace = True
+            validate_assignment = True
+            extra = "forbid"
 
     def format(self) -> list[dict[str, Any]] | str:
         try:
@@ -35,7 +43,7 @@ class Image(BaseType):
             raise ValueError(f"Failed to format image for DSPy: {e}")
         return [{"type": "image_url", "image_url": {"url": image_url}}]
 
-    @pydantic.model_validator(mode="before")
+    @create_model_validator(mode="before")
     @classmethod
     def validate_input(cls, values):
         # Allow the model to accept either a URL string or a dictionary with a single 'url' key
@@ -46,7 +54,7 @@ class Image(BaseType):
             # if it's a dict, ensure it has only the 'url' key
             return values
         elif isinstance(values, cls):
-            return values.model_dump()
+            return model_dump(values)
         else:
             raise TypeError("Expected a string URL or a dictionary with a key 'url'.")
 

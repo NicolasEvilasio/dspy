@@ -3,7 +3,19 @@ from collections import defaultdict
 from queue import Queue
 from typing import TYPE_CHECKING, Any, List
 
-from litellm import ModelResponseStream
+# Try to import ModelResponseStream, fall back to available alternatives
+try:
+    from litellm import ModelResponseStream
+except ImportError:
+    # Fallback for older versions of litellm that don't have ModelResponseStream
+    try:
+        from litellm import CustomStreamWrapper as ModelResponseStream
+    except ImportError:
+        # If neither is available, create a dummy class
+        class ModelResponseStream:
+            """Dummy class for compatibility when litellm streaming is not available"""
+            def __init__(self, *args, **kwargs):
+                pass
 
 from dspy.adapters.chat_adapter import ChatAdapter
 from dspy.adapters.json_adapter import JSONAdapter

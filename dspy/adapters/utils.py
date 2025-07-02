@@ -7,11 +7,11 @@ from typing import Any, List, Literal, Union, get_args, get_origin
 
 import json_repair
 import pydantic
-from pydantic import TypeAdapter
 from pydantic.fields import FieldInfo
 
 from dspy.adapters.types.base_type import BaseType
 from dspy.signatures.utils import get_dspy_field_type
+from dspy.utils.pydantic_compat import get_type_adapter
 
 
 def serialize_for_json(value: Any) -> Any:
@@ -27,7 +27,7 @@ def serialize_for_json(value: Any) -> Any:
     # a string representation of the value if that fails (e.g. if the value contains an object
     # that pydantic doesn't recognize or can't serialize)
     try:
-        return TypeAdapter(type(value)).dump_python(value, mode="json")
+        return get_type_adapter(type(value)).dump_python(value, mode="json")
     except Exception:
         return str(value)
 
@@ -75,7 +75,7 @@ def _get_json_schema(field_type):
             return [move_type_to_front(item) for item in d]
         return d
 
-    schema = pydantic.TypeAdapter(field_type).json_schema()
+    schema = get_type_adapter(field_type).json_schema()
     schema = move_type_to_front(schema)
     return schema
 
@@ -160,7 +160,7 @@ def parse_value(value, annotation):
         raise ValueError(f"{value!r} is not one of {allowed!r}")
 
     if not isinstance(value, str):
-        return TypeAdapter(annotation).validate_python(value)
+        return get_type_adapter(annotation).validate_python(value)
 
     candidate = json_repair.loads(value)  # json_repair.loads returns "" on failure.
     if candidate == "" and value != "":
@@ -170,7 +170,7 @@ def parse_value(value, annotation):
             candidate = value
 
     try:
-        return TypeAdapter(annotation).validate_python(candidate)
+        return get_type_adapter(annotation).validate_python(candidate)
     except pydantic.ValidationError:
         if origin is Union and type(None) in get_args(annotation) and str in get_args(annotation):
             return str(candidate)
